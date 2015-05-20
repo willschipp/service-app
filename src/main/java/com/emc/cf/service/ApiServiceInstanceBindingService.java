@@ -1,6 +1,5 @@
 package com.emc.cf.service;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -16,11 +15,14 @@ import org.springframework.stereotype.Service;
 
 import com.emc.cf.app.data.ApiKey;
 import com.emc.cf.app.data.ApiKeyRepository;
+import com.emc.cf.data.PersistedServiceInstanceBinding;
+import com.emc.cf.data.PersistedServiceInstanceBindingRepository;
 
 @Service
 public class ApiServiceInstanceBindingService implements ServiceInstanceBindingService {
 
-	private Map<String,ServiceInstanceBinding> bindings = Collections.synchronizedMap(new HashMap<String,ServiceInstanceBinding>());
+	@Autowired
+	private PersistedServiceInstanceBindingRepository bindingRepository;
 	
 	@Autowired
 	private ApiKeyRepository repository;
@@ -33,9 +35,14 @@ public class ApiServiceInstanceBindingService implements ServiceInstanceBindingS
 		apiKey.getApplicationId().add(createServiceInstanceBindingRequest.getAppGuid());
 		repository.save(apiKey);
 		//build
+		Map<String,Object> credentials = new HashMap<String,Object>();
+		credentials.put("api-key",apiKey.getApiKey());
 		String key = UUID.randomUUID().toString();
-		ServiceInstanceBinding binding = new ServiceInstanceBinding(key, createServiceInstanceBindingRequest.getServiceInstanceId(), null, null, createServiceInstanceBindingRequest.getAppGuid());
-		bindings.put(key, binding);
+		ServiceInstanceBinding binding = new ServiceInstanceBinding(key, createServiceInstanceBindingRequest.getServiceInstanceId(), credentials, null, createServiceInstanceBindingRequest.getAppGuid());
+		//convert
+		PersistedServiceInstanceBinding persistedBinding = PersistedServiceInstanceBinding.getPersistedServiceInstanceBinding(binding);
+		//save
+		bindingRepository.save(persistedBinding);
 		//return
 		return binding;
 	}
@@ -43,13 +50,13 @@ public class ApiServiceInstanceBindingService implements ServiceInstanceBindingS
 	@Override
 	public ServiceInstanceBinding deleteServiceInstanceBinding(DeleteServiceInstanceBindingRequest deleteServiceInstanceBindingRequest) throws ServiceBrokerException {
 		//get the binding
-		ServiceInstanceBinding binding = bindings.get(deleteServiceInstanceBindingRequest.getBindingId());
-		ApiKey apiKey = repository.findByApplicationId(binding.getAppGuid());
+		PersistedServiceInstanceBinding persistedBinding = bindingRepository.findOne(deleteServiceInstanceBindingRequest.getBindingId());
+		ApiKey apiKey = repository.findByApplicationId(persistedBinding.getAppGuid());
 		//add the binding
-		apiKey.getApplicationId().remove(binding.getAppGuid());
+		apiKey.getApplicationId().remove(persistedBinding.getAppGuid());
 		repository.save(apiKey);
 		//return 
-		return binding;
+		return persistedBinding.getServiceInstanceBinding();//gone
 	}
 
 }

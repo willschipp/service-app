@@ -17,8 +17,8 @@ public class CatalogConfiguration {
 
 	@Bean
 	public Catalog catalog() {
-		return new Catalog(Arrays.asList(new ServiceDefinition("rest-service","REST service","An example REST service",true,false,
-				Arrays.asList(new Plan("basic-rest-plan","The Basic Plan","This is a basic plan",getPlanMetadata())),
+		return new Catalog(Arrays.asList(new ServiceDefinition("rest-service","rest-service","An example REST service",true,false,
+				Arrays.asList(new Plan("basic-rest-plan","the-basic-plan","This is a basic plan",getPlanMetadata())),
 				Arrays.asList("rest-service","document"),
 				getServiceDefinitionMetadata(),
 				null,
@@ -28,7 +28,7 @@ public class CatalogConfiguration {
 	
 	private Map<String,Object> getPlanMetadata() {
 		Map<String,Object> metadata = new HashMap<String,Object>();
-		metadata.put("costs",getCosts());
+//		metadata.put("costs",getCosts());
 		metadata.put("bullets",getBullets());
 		return metadata;
 	}
@@ -59,7 +59,7 @@ public class CatalogConfiguration {
 	private Map<String,Object> getServiceDefinitionMetadata() {
 		Map<String,Object> metadata = new HashMap<String,Object>();
 		metadata.put("displayName", "REST-Service");
-		metadata.put("imageUrl","http://www.clipartpanda.com/clipart_images/sample-stamp-clip-art-7166533");
+		metadata.put("imageUrl","http://images.clipartpanda.com/example-clipart-canstock6911432.jpg");
 		metadata.put("longDescription","sample RESTful service API key as a service broker");
 		metadata.put("providerDisplayName","EMC");
 		metadata.put("documentationUrl","http://www.emc.com");

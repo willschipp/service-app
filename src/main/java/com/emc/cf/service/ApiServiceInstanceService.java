@@ -1,9 +1,6 @@
 package com.emc.cf.service;
 
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
@@ -20,11 +17,16 @@ import org.springframework.stereotype.Service;
 
 import com.emc.cf.app.data.ApiKey;
 import com.emc.cf.app.data.ApiKeyRepository;
+import com.emc.cf.data.PersistedServiceInstance;
+import com.emc.cf.data.PersistedServiceInstanceRepository;
 
 @Service
 public class ApiServiceInstanceService implements ServiceInstanceService {
 	
-	private Map<String,ServiceInstance> serviceInstances = Collections.synchronizedMap(new HashMap<String,ServiceInstance>());
+//	private Map<String,ServiceInstance> serviceInstances = Collections.synchronizedMap(new HashMap<String,ServiceInstance>());
+	
+	@Autowired
+	private PersistedServiceInstanceRepository serviceInstanceRepository;
 	
 	@Autowired
 	private ApiKeyRepository repository;
@@ -41,34 +43,38 @@ public class ApiServiceInstanceService implements ServiceInstanceService {
 		repository.save(key);
 		//build the object
 		ServiceInstance instance = new ServiceInstance(createServiceInstanceRequest);
-		serviceInstances.put(createServiceInstanceRequest.getServiceInstanceId(), instance);
+		PersistedServiceInstance persistedInstance = PersistedServiceInstance.getPersisted(instance);
+		serviceInstanceRepository.save(persistedInstance);
 		//return
 		return instance;
 	}
 
 	@Override
 	public ServiceInstance getServiceInstance(String serviceInstanceId) {
-		return serviceInstances.get(serviceInstanceId);
+		PersistedServiceInstance persistedInstance = serviceInstanceRepository.findOne(serviceInstanceId);
+		if (persistedInstance != null) {
+			return persistedInstance.getServiceInstance();
+		} else {
+			return null;
+		}//end if
 	}
 
 	@Override
 	public ServiceInstance deleteServiceInstance(DeleteServiceInstanceRequest deleteServiceInstanceRequest) throws ServiceBrokerException {
 		//delete by the key
 		repository.delete(deleteServiceInstanceRequest.getServiceInstanceId());
+		serviceInstanceRepository.delete(deleteServiceInstanceRequest.getServiceInstanceId());
 		//remove the instance
-		ServiceInstance instance = serviceInstances.remove(deleteServiceInstanceRequest.getServiceInstanceId());
 		//return
-		return instance;
+		return null;//GONE
 	}
 
 	@Override
 	public ServiceInstance updateServiceInstance(UpdateServiceInstanceRequest updateServiceInstanceRequest) throws ServiceInstanceUpdateNotSupportedException, ServiceBrokerException, ServiceInstanceDoesNotExistException {
-		if (!serviceInstances.containsKey(updateServiceInstanceRequest.getServiceInstanceId())) {
-			throw new ServiceInstanceDoesNotExistException(updateServiceInstanceRequest.getServiceInstanceId());
-		}//end if
 		//TODO - add update logic
+		PersistedServiceInstance persistedServiceInstance = serviceInstanceRepository.findOne(updateServiceInstanceRequest.getServiceInstanceId());
 		//return
-		return serviceInstances.get(updateServiceInstanceRequest.getServiceInstanceId());
+		return persistedServiceInstance.getServiceInstance();
 	}
 
 }
